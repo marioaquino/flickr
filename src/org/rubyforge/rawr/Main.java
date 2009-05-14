@@ -1,74 +1,67 @@
-    package org.rubyforge.rawr;
+package org.rubyforge.rawr;
 
-    import java.io.BufferedInputStream;
-    import java.io.DataInputStream;
-    import java.io.File;
-    import java.io.FileInputStream;
-    import java.io.IOException;
-    import java.util.ArrayList;
-    import org.jruby.Ruby;
-    import org.jruby.javasupport.JavaEmbedUtils;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.io.IOException;
+import java.net.URL;
 
-    public class Main
+
+import java.util.ArrayList;
+import org.jruby.Ruby;
+import org.jruby.RubyInstanceConfig;
+import org.jruby.javasupport.JavaEmbedUtils;
+
+public class Main
+{
+  public static void main(String[] args) throws Exception
+  {   
+    RubyInstanceConfig config = new RubyInstanceConfig();
+    config.setArgv(args);
+    Ruby runtime = JavaEmbedUtils.initialize(new ArrayList(0), config);
+    String mainRubyFile = "main";
+   
+    ArrayList<String> config_data = new ArrayList<String>();
+    try{
+      java.io.InputStream ins = Main.class.getClassLoader().getResourceAsStream("run_configuration");
+      if (ins == null ) {
+        System.err.println("Did not find configuration file 'run_configuration', using defaults.");
+      } else {
+        config_data = getConfigFileContents(ins);
+      }
+    }
+    catch(IOException ioe)
     {
-        @SuppressWarnings("deprecation") // for the DataInputStream.readLine() call
-        public static void main(String[] args) throws Exception
-        {   
-            Ruby runtime = JavaEmbedUtils.initialize(new ArrayList(0));
-            boolean use_defaults = false;
+      System.err.println("Error loading run configuration file 'run_configuration', using defaults: " + ioe);
+    }
+    catch(java.lang.NullPointerException npe)
+    {
+      System.err.println("Error loading run configuration file 'run_configuration', using defaults: " + npe );
+    }
 
-            ArrayList<String> lines = new ArrayList<String>();
-            try
-            {
-                DataInputStream dis = new DataInputStream(new BufferedInputStream(Main.class.getClassLoader().getResourceAsStream("run_configuration")));
-
-                while(dis.available() != 0)
-                {
-                    lines.add(dis.readLine());
-                }
-                dis = null;
-            }
-            catch(IOException e)
-            {
-                System.err.println("Error loading run configuration file 'run_configuration', using configuration defaults");
-                use_defaults = true;
-            }
-
-            if(use_defaults)
-            {
-                runtime.evalScriptlet("require 'java'\n" + 
-                        "$: << 'src'\n" +
-                        "begin\n" +
-                        "require 'src/main'\n" +
-                        "rescue LoadError => e\n" +
-                        "warn \"Error starting the application\"\n" +
-                        "warn e\n" + 
-                        "end"
-                        );
-            }
-            else
-            {
-                if(3 == lines.size())
-                {
-                    System.setProperty("java.library.path",lines.get(2));
-                }
-
-                if(2 <= lines.size())
-                {
-                    runtime.evalScriptlet("require 'java'\n" +
-                            "$: << '" + lines.get(0) + "'\n" +
-                            "begin\n" +
-                            "require '" + lines.get(0) + "/" + lines.get(1) + "'\n" +
-                            "rescue LoadError => e\n" +
-                            "warn \"Error starting the application\"\n" +
-                            "warn e\n" + 
-                            "end"
-                            );
-                }
-                else
-                {
-                    System.err.println("Incorrect format for file 'run_configuration'");
-                }
-            }
+    for(String line : config_data) {
+        String[] parts = line.split(":");
+        if("main_ruby_file".equals(parts[0].replaceAll(" ", ""))) {
+            mainRubyFile = parts[1].replaceAll(" ", "");
         }
     }
+
+    runtime.evalScriptlet("require '" + mainRubyFile + "'");
+  }
+
+  public static URL getResource(String path) {
+      return Main.class.getClassLoader().getResource(path);
+  }
+
+  private static ArrayList<String> getConfigFileContents(InputStream input) throws IOException, java.lang.NullPointerException {
+    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+    String line;
+    ArrayList<String> contents = new ArrayList<String>();
+
+    while ((line = reader.readLine()) != null) {
+      contents.add(line);
+    }
+    reader.close();
+    return(contents);
+  }
+}
