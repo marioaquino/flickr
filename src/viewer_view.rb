@@ -12,7 +12,6 @@ class ViewerView < Monkeybars::View
   def build_tree_nodes(search_results)
     root = DefaultMutableTreeNode.new('root', true)
     search_results.each do |photo|
-      def photo.to_s; self.title; end #NEW!!!!!!!
       root.add DefaultMutableTreeNode.new(photo, true)
     end
     javax.swing.tree.DefaultTreeModel.new(root, true)
@@ -22,7 +21,6 @@ class ViewerView < Monkeybars::View
   def expand_node(model, transfer)
     expanding_node = transfer[:expanding_node]
     transfer[:photo_sizes].each do |size|
-      def size.to_s; self.label; end #NEW!!!!!!!
       expanding_node.add DefaultMutableTreeNode.new(size, false)
     end
   end

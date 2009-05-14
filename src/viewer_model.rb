@@ -20,9 +20,9 @@ class ViewerModel
   end
 end
 
-#class FlickRaw::Response
-#  def to_s
-#    return title if respond_to? :title
-#    label
-#  end
-#end
+class FlickRaw::Response
+ def to_s
+   return title if respond_to? :title
+   label
+ end
+end
